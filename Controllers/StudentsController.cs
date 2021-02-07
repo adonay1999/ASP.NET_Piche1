@@ -2,27 +2,35 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PruebaPiche.Data;
 using PruebaPiche.Data.Entities;
+using PruebaPiche.DTO;
 
 namespace PruebaPiche.Controllers
 {
     public class StudentsController : Controller
     {
         private readonly SchoolContext _context;
+        private readonly IMapper mapper;
 
-        public StudentsController(SchoolContext context)
+        public StudentsController(SchoolContext context, IMapper mapper)
         {
             _context = context;
+            this.mapper = mapper;
         }
 
         // GET: Students
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Students.ToListAsync());
+            //return View(await _context.Students.ToListAsync());
+            var data = await _context.Students.ToListAsync();
+            var listStudents = data.Select(x => mapper.Map<StudentDTO>(x)).ToList();
+
+            return View(listStudents);
         }
 
         // GET: Students/Details/5
@@ -40,7 +48,8 @@ namespace PruebaPiche.Controllers
                 return NotFound();
             }
 
-            return View(student);
+            var studentDTO = mapper.Map<StudentDTO>(student);
+            return View(studentDTO);
         }
 
         // GET: Students/Create
@@ -54,15 +63,24 @@ namespace PruebaPiche.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,LastName,FirstMidName,EnrollmentDate")] Student student)
+        public async Task<IActionResult> Create([Bind("ID,LastName,FirstMidName,EnrollmentDate")] StudentDTO studentDTO )
         {
+            //if (ModelState.IsValid)
+            //{
+            //    //_context.Add(student);
+            //    //await _context.SaveChangesAsync();
+            //    //return RedirectToAction(nameof(Index));
+            //}
+            //return View(student);
+
             if (ModelState.IsValid)
             {
+                var student = mapper.Map<Student>(studentDTO);
                 _context.Add(student);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(student);
+            return View(studentDTO);
         }
 
         // GET: Students/Edit/5
@@ -78,7 +96,8 @@ namespace PruebaPiche.Controllers
             {
                 return NotFound();
             }
-            return View(student);
+            var studentDTO = mapper.Map<StudentDTO>(student);
+            return View(studentDTO);
         }
 
         // POST: Students/Edit/5
@@ -86,9 +105,9 @@ namespace PruebaPiche.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,LastName,FirstMidName,EnrollmentDate")] Student student)
+        public async Task<IActionResult> Edit(int id, [Bind("ID,LastName,FirstMidName,EnrollmentDate")] StudentDTO studentDTO)
         {
-            if (id != student.ID)
+            if (id != studentDTO.ID)
             {
                 return NotFound();
             }
@@ -97,12 +116,21 @@ namespace PruebaPiche.Controllers
             {
                 try
                 {
-                    _context.Update(student);
-                    await _context.SaveChangesAsync();
+                    //_context.Update(studentDTO);
+                    //await _context.SaveChangesAsync();
+                    if (ModelState.IsValid)
+                    {
+                        var student = mapper.Map<Student>(studentDTO);
+                        _context.Update(student);
+                        await _context.SaveChangesAsync();
+                        return RedirectToAction(nameof(Index));
+                    }
+                    return View(studentDTO);
                 }
+
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!StudentExists(student.ID))
+                    if (!StudentExists(studentDTO.ID))
                     {
                         return NotFound();
                     }
@@ -111,9 +139,9 @@ namespace PruebaPiche.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                //return RedirectToAction(nameof(Index));
             }
-            return View(student);
+            return View(studentDTO);
         }
 
         // GET: Students/Delete/5
